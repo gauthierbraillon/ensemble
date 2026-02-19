@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pipeline:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install tools
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install github.com/gitleaks/gitleaks/v8@latest
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+            | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+
+      # Gate 1
+      - name: lint
+        run: make lint
+
+      # Gate 2
+      - name: typecheck
+        run: make typecheck
+
+      # Gate 3
+      - name: secrets
+        run: make secrets
+
+      # Gate 4
+      - name: sast
+        run: make sast
+
+      # Gate 5
+      - name: build
+        run: make build
+
+      # Gate 6
+      - name: test
+        run: make test
+
+      # Gate 7
+      - name: vulncheck
+        run: make vulncheck
+
+      # Gate 8
+      - name: test-contracts
+        run: make test-contracts
+
+      # Gate 9
+      - name: test-schema
+        run: make test-schema
