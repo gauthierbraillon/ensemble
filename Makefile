@@ -1,4 +1,4 @@
-.PHONY: lint typecheck secrets sast build test vulncheck test-contracts test-schema ci
+.PHONY: lint typecheck secrets sast build test vulncheck test-contracts test-schema ci install
 
 # Gate 1 — Linting and formatting
 lint:
@@ -20,6 +20,9 @@ sast:
 # Gate 5 — Compilation
 build:
 	go build -o bin/ensemble .
+
+install:
+	go install .
 
 # Gate 6 — Unit tests
 test:
