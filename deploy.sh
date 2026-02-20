@@ -13,7 +13,7 @@ echo "=== ensemble deploy ==="
 make ci || fail "gates failed — push aborted"
 pass "all gates green"
 
-npx semantic-release --no-ci || true
+node_modules/.bin/semantic-release --no-ci || true
 pass "semantic release done"
 
 git push --follow-tags origin main
