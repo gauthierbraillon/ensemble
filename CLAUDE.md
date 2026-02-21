@@ -11,6 +11,7 @@ You are the conductor. Agents are the ensemble. Quality gates are non-negotiable
 - **Token discipline**: agents are narrow judges, not broad assistants. Scoped context only. Minimum tokens to make the right call.
 - **Trunk-based development**: no long-lived branches. All work integrates to main daily.
 - **CD by default**: every commit on main is deployable. Pipeline is the gate.
+- **Done means green pipeline**: work is not done until the CD pipeline passes. Local green is necessary but not sufficient.
 
 ## Development Workflow (RED → GREEN → REFACTOR → DEPLOY)
 

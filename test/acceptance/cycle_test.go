@@ -86,6 +86,53 @@ func TestCycleBlocksWhenImplementationHasNoTest(t *testing.T) {
 	assert.True(t, hasBlock)
 }
 
+func TestCycleSWEAgentEmitsWarnWhenAPIKeyAbsent(t *testing.T) {
+	cmd := exec.Command(ensembleBin(t), "cycle")
+	cmd.Stdin = strings.NewReader(diffWithTest())
+	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+	out, err := cmd.CombinedOutput()
+	assert.NoError(t, err, "expected exit 0: %s", out)
+
+	findings := parseFindings(t, out)
+	var sweFindings []map[string]interface{}
+	for _, f := range findings {
+		if f["agent"] == "software-engineering" {
+			sweFindings = append(sweFindings, f)
+		}
+	}
+	require.Len(t, sweFindings, 1)
+	assert.Equal(t, "warn", sweFindings[0]["verdict"])
+}
+
+func TestCycleOutputContainsBothTDDAndSWEFindings(t *testing.T) {
+	cmd := exec.Command(ensembleBin(t), "cycle")
+	cmd.Stdin = strings.NewReader(diffWithTest())
+	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+	out, err := cmd.CombinedOutput()
+	assert.NoError(t, err, "expected exit 0: %s", out)
+
+	findings := parseFindings(t, out)
+	agents := make(map[string]bool)
+	for _, f := range findings {
+		if a, ok := f["agent"].(string); ok {
+			agents[a] = true
+		}
+	}
+	assert.True(t, agents["testing-quality"], "missing testing-quality agent")
+	assert.True(t, agents["software-engineering"], "missing software-engineering agent")
+}
+
+func envWithout(env []string, key string) []string {
+	var out []string
+	prefix := key + "="
+	for _, kv := range env {
+		if !strings.HasPrefix(kv, prefix) {
+			out = append(out, kv)
+		}
+	}
+	return out
+}
+
 func diffWithTest() string {
 	return `diff --git a/internal/foo/foo.go b/internal/foo/foo.go
 --- /dev/null

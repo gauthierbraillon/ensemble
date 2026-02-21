@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var allowedEnvKeys = []string{"HOME", "PATH", "TERM", "LANG"}
+var allowedEnvKeys = []string{"HOME", "PATH", "TERM", "LANG", "ANTHROPIC_API_KEY"}
 var allowedEnvPrefixes = []string{"LC_"}
 
 type ClaudeRunner struct {
