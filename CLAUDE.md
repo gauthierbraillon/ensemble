@@ -23,7 +23,7 @@ Contract tests are added only when an external interface boundary exists (HTTP, 
 
 1. **RED**: write one sociable unit test expressing an acceptance criterion, run it, confirm it fails for the right reason
 2. **GREEN**: implement minimum code to pass, run only the failing test
-3. **REFACTOR**: clean code and tests, run all tests, stay green
+3. **REFACTOR**: clean code and tests, run all tests, stay green — update README if public CLI surface or install method changed
 4. **DEPLOY**: atomic commit then run the full pipeline — pipeline is the gate
 
 No mocks of our own code. Mock external systems only (APIs, file system, time).

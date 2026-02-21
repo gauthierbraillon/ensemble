@@ -9,12 +9,18 @@ Quality is structural, not advisory. You direct. Agents enforce.
 ## Install
 
 ```sh
-git clone https://github.com/gauthierbraillon/ensemble
-cd ensemble
-make install
+go install github.com/gauthierbraillon/ensemble@latest
 ```
 
 `ensemble` lands in `$(go env GOPATH)/bin`. Make sure that is on your `$PATH`.
+
+To install from source:
+
+```sh
+git clone https://github.com/gauthierbraillon/ensemble
+cd ensemble
+go install .
+```
 
 ## Hook (automatic TDD enforcement)
 
