@@ -22,6 +22,14 @@ cd ensemble
 go install .
 ```
 
+## Interactive session
+
+```sh
+ensemble
+```
+
+Opens a conversation with the agent team. Type naturally. Agents enforce discipline, you decide on blocks.
+
 ## Hook (automatic TDD enforcement)
 
 Copy `.claude/settings.json` into your project's `.claude/` directory. Claude Code calls `ensemble hook` before every `Write` or `Edit`. Writing `foo.go` without `foo_test.go` on disk hard-blocks Claude Code (exit 2):
