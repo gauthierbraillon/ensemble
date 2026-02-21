@@ -23,7 +23,11 @@ type toolInput struct {
 var hookCmd = &cobra.Command{
 	Use:   "hook",
 	Short: "Claude Code PreToolUse hook — blocks writes that violate TDD",
-	RunE:  runHook,
+	Long: `Called automatically by Claude Code before every Write or Edit. Not for manual use.
+
+Wire it up by copying .claude/settings.json into your project's .claude/ directory.
+Writing foo.go without foo_test.go on disk exits 2 and hard-blocks Claude Code.`,
+	RunE: runHook,
 }
 
 func runHook(_ *cobra.Command, _ []string) error {

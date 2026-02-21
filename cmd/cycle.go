@@ -16,8 +16,14 @@ import (
 
 var cycleCmd = &cobra.Command{
 	Use:   "cycle",
-	Short: "Enforce RED→GREEN→REFACTOR→DEPLOY on a diff read from stdin",
-	RunE:  runCycle,
+	Short: "Enforce RED→GREEN→REFACTOR→DEPLOY on a diff",
+	Long: `Reads a unified diff from stdin and runs TDD and software engineering agents against it.
+
+Each finding prints as one JSON line. Exits 1 if any verdict is "block".`,
+	Example: `  git diff HEAD~1 | ensemble cycle
+  git diff HEAD   | ensemble cycle
+  ensemble cycle  < my.patch`,
+	RunE: runCycle,
 }
 
 func runCycle(_ *cobra.Command, _ []string) error {
