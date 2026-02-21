@@ -24,13 +24,18 @@ jobs:
           cache: true
 
       - name: Install tools
+        env:
+          GOTOOLCHAIN: local
         run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          GOPATH=$(go env GOPATH)
+          go install honnef.co/go/tools/cmd/staticcheck@v0.4.7
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.19.0
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          go install github.com/gitleaks/gitleaks/v8@latest
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-            | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+            | sh -s -- -b "$GOPATH/bin" v1.62.2
+          GITLEAKS_VER=8.21.2
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VER}/gitleaks_${GITLEAKS_VER}_linux_x64.tar.gz" \
+            | tar -xz -C "$GOPATH/bin" gitleaks
 
       # Gate 1
       - name: lint
