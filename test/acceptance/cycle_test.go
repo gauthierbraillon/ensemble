@@ -37,13 +37,7 @@ func parseFindings(t *testing.T, out []byte) []map[string]interface{} {
 	return findings
 }
 
-func TestCycleCommandIsRegistered(t *testing.T) {
-	out, err := exec.Command(ensembleBin(t), "help").CombinedOutput()
-	require.NoError(t, err)
-	assert.Contains(t, string(out), "cycle")
-}
-
-func TestCycleOutputIsNewlineDelimitedJSON(t *testing.T) {
+func TestCycleFindingsAreOneJSONLineEachForCIIntegration(t *testing.T) {
 	cmd := exec.Command(ensembleBin(t), "cycle")
 	cmd.Stdin = strings.NewReader("diff --git a/x.go b/x.go\n")
 	out, _ := cmd.CombinedOutput()
@@ -86,7 +80,7 @@ func TestCycleBlocksWhenImplementationHasNoTest(t *testing.T) {
 	assert.True(t, hasBlock)
 }
 
-func TestCycleSWEAgentEmitsWarnWhenAPIKeyAbsent(t *testing.T) {
+func TestCycleRunsOfflineWithWarningWhenNoAPIKeyIsConfigured(t *testing.T) {
 	cmd := exec.Command(ensembleBin(t), "cycle")
 	cmd.Stdin = strings.NewReader(diffWithTest())
 	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
@@ -104,7 +98,7 @@ func TestCycleSWEAgentEmitsWarnWhenAPIKeyAbsent(t *testing.T) {
 	assert.Equal(t, "warn", sweFindings[0]["verdict"])
 }
 
-func TestCycleOutputContainsBothTDDAndSWEFindings(t *testing.T) {
+func TestCycleCombinesTDDAndEngineeringReviews(t *testing.T) {
 	cmd := exec.Command(ensembleBin(t), "cycle")
 	cmd.Stdin = strings.NewReader(diffWithTest())
 	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")

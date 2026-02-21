@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInteractiveSessionShowsPromptOnNoArgs(t *testing.T) {
+func TestEnsembleOpensInteractiveSessionWhenRunAlone(t *testing.T) {
 	cmd := exec.Command(ensembleBin(t))
 	cmd.Stdin = strings.NewReader("")
 	out, err := cmd.CombinedOutput()

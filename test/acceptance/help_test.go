@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCycleHelpShowsGitDiffExample(t *testing.T) {
+func TestCycleCommandShowsUsageExampleInHelp(t *testing.T) {
 	out, err := exec.Command(ensembleBin(t), "cycle", "--help").CombinedOutput()
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "git diff HEAD~1 | ensemble cycle")
@@ -20,7 +20,7 @@ func TestHookHelpExplainsItIsCalledByClaudeCode(t *testing.T) {
 	assert.Contains(t, string(out), "settings.json")
 }
 
-func TestRootHelpDoesNotShowCompletionCommand(t *testing.T) {
+func TestEnsembleDoesNotExposeInternalShellCompletionCommand(t *testing.T) {
 	out, err := exec.Command(ensembleBin(t), "--help").CombinedOutput()
 	require.NoError(t, err)
 	assert.NotContains(t, string(out), "completion")
