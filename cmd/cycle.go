@@ -17,7 +17,7 @@ import (
 var cycleCmd = &cobra.Command{
 	Use:   "cycle",
 	Short: "Enforce RED→GREEN→REFACTOR→DEPLOY on a diff",
-	Long: `Reads a unified diff from stdin and runs TDD and software engineering agents against it.
+	Long: `Reads a unified diff from stdin and runs TDD, software engineering, and security agents against it.
 
 Each finding prints as one JSON line. Exits 1 if any verdict is "block".`,
 	Example: `  git diff HEAD~1 | ensemble cycle
@@ -34,6 +34,7 @@ func runCycle(_ *cobra.Command, _ []string) error {
 	var findings []agent.Finding
 	findings = append(findings, agent.ReviewDiff(string(diff))...)
 	findings = append(findings, agent.ReviewCode(context.Background(), string(diff), sweRunner())...)
+	findings = append(findings, agent.ReviewSecurity(context.Background(), string(diff), securityRunner())...)
 	blocked := false
 	for _, f := range findings {
 		line, _ := json.Marshal(f)
@@ -49,6 +50,22 @@ func runCycle(_ *cobra.Command, _ []string) error {
 }
 
 func sweRunner() runner.Runner {
+	if os.Getenv("ANTHROPIC_API_KEY") == "" {
+		return nil
+	}
+	r, err := runner.New(runner.Config{
+		Binary:   "claude",
+		Model:    "claude-haiku-4-5-20251001",
+		Timeout:  30 * time.Second,
+		MaxBytes: 32 * 1024,
+	})
+	if err != nil {
+		return nil
+	}
+	return r
+}
+
+func securityRunner() runner.Runner {
 	if os.Getenv("ANTHROPIC_API_KEY") == "" {
 		return nil
 	}

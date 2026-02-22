@@ -98,7 +98,7 @@ func TestCycleRunsOfflineWithWarningWhenNoAPIKeyIsConfigured(t *testing.T) {
 	assert.Equal(t, "warn", sweFindings[0]["verdict"])
 }
 
-func TestCycleCombinesTDDAndEngineeringReviews(t *testing.T) {
+func TestCycleCombinesAllActiveAgents(t *testing.T) {
 	cmd := exec.Command(ensembleBin(t), "cycle")
 	cmd.Stdin = strings.NewReader(diffWithTest())
 	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
@@ -114,6 +114,7 @@ func TestCycleCombinesTDDAndEngineeringReviews(t *testing.T) {
 	}
 	assert.True(t, agents["testing-quality"], "missing testing-quality agent")
 	assert.True(t, agents["software-engineering"], "missing software-engineering agent")
+	assert.True(t, agents["security"], "missing security agent")
 }
 
 func envWithout(env []string, key string) []string {
