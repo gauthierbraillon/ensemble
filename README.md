@@ -22,6 +22,14 @@ cd ensemble
 go install .
 ```
 
+## Setup
+
+```sh
+ensemble init
+```
+
+Creates or updates `.claude/settings.json` in the current directory with the `ensemble` PreToolUse hook. Run once per project. Idempotent — safe to re-run.
+
 ## Interactive session
 
 ```sh
@@ -32,7 +40,7 @@ Opens a conversation with the agent team. Type naturally. Agents enforce discipl
 
 ## Hook (automatic TDD enforcement)
 
-Copy `.claude/settings.json` into your project's `.claude/` directory. Claude Code calls `ensemble hook` before every `Write` or `Edit`. Writing `foo.go` without `foo_test.go` on disk hard-blocks Claude Code (exit 2):
+After running `ensemble init`, Claude Code calls `ensemble hook` before every `Write` or `Edit`. Writing `foo.go` without `foo_test.go` on disk hard-blocks Claude Code (exit 2):
 
 ```json
 {"agent":"testing-quality","verdict":"block","severity":"critical","finding":"no test file for foo.go","file":"foo.go","fix":"write foo_test.go with a failing test first"}
