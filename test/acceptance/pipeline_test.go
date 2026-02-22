@@ -42,42 +42,44 @@ var requiredCISteps = []string{
 	"test-schema",
 }
 
-func TestMakefileHasAllQualityGates(t *testing.T) {
-	content, err := os.ReadFile("../../Makefile")
-	require.NoError(t, err, "Makefile must exist")
+func TestCDPipeline(t *testing.T) {
+	t.Run("Makefile defines all 9 quality gates", func(t *testing.T) {
+		content, err := os.ReadFile("../../Makefile")
+		require.NoError(t, err, "Makefile must exist")
 
-	makefile := string(content)
-	for _, target := range requiredMakeTargets {
-		require.Contains(t, makefile, target+":", "Makefile must define target: "+target)
-	}
-}
+		makefile := string(content)
+		for _, target := range requiredMakeTargets {
+			require.Contains(t, makefile, target+":", "Makefile must define target: "+target)
+		}
+	})
 
-func TestCIWorkflowHasAllQualityGates(t *testing.T) {
-	content, err := os.ReadFile("../../.github/workflows/ci.yml")
-	require.NoError(t, err, ".github/workflows/ci.yml must exist")
+	t.Run("CI workflow runs all quality gates on every push", func(t *testing.T) {
+		content, err := os.ReadFile("../../.github/workflows/ci.yml")
+		require.NoError(t, err, ".github/workflows/ci.yml must exist")
 
-	var workflow map[string]interface{}
-	require.NoError(t, yaml.Unmarshal(content, &workflow), "ci.yml must be valid YAML")
+		var workflow map[string]interface{}
+		require.NoError(t, yaml.Unmarshal(content, &workflow), "ci.yml must be valid YAML")
 
-	workflowStr := string(content)
-	for _, step := range requiredCISteps {
-		require.True(t,
-			strings.Contains(workflowStr, "make "+step),
-			"ci.yml must invoke make %s", step,
-		)
-	}
-}
+		workflowStr := string(content)
+		for _, step := range requiredCISteps {
+			require.True(t,
+				strings.Contains(workflowStr, "make "+step),
+				"ci.yml must invoke make %s", step,
+			)
+		}
+	})
 
-func TestCIWorkflowTriggersOnMainPush(t *testing.T) {
-	content, err := os.ReadFile("../../.github/workflows/ci.yml")
-	require.NoError(t, err, ".github/workflows/ci.yml must exist")
+	t.Run("CI workflow triggers on push to main", func(t *testing.T) {
+		content, err := os.ReadFile("../../.github/workflows/ci.yml")
+		require.NoError(t, err, ".github/workflows/ci.yml must exist")
 
-	var workflow map[string]interface{}
-	require.NoError(t, yaml.Unmarshal(content, &workflow), "ci.yml must be valid YAML")
+		var workflow map[string]interface{}
+		require.NoError(t, yaml.Unmarshal(content, &workflow), "ci.yml must be valid YAML")
 
-	on, ok := workflow["on"]
-	require.True(t, ok, "workflow must have 'on' trigger")
+		on, ok := workflow["on"]
+		require.True(t, ok, "workflow must have 'on' trigger")
 
-	onStr := fmt.Sprint(on)
-	require.Contains(t, onStr, "push", "workflow must trigger on push")
+		onStr := fmt.Sprint(on)
+		require.Contains(t, onStr, "push", "workflow must trigger on push")
+	})
 }

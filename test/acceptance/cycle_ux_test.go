@@ -10,69 +10,71 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCycleIncludesUXAgentWhenDiffHasExportedAPI(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diffWithExportedFunc())
-	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "expected exit 0: %s", out)
+func TestUXDesignAgent(t *testing.T) {
+	t.Run("included when diff contains an exported API change", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithExportedFunc())
+		cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "expected exit 0: %s", out)
 
-	findings := parseFindings(t, out)
-	hasUXAgent := false
-	for _, f := range findings {
-		if f["agent"] == "ux-design" {
-			hasUXAgent = true
+		findings := parseFindings(t, out)
+		hasUXAgent := false
+		for _, f := range findings {
+			if f["agent"] == "ux-design" {
+				hasUXAgent = true
+			}
 		}
-	}
-	assert.True(t, hasUXAgent, "no ux-design agent finding in output")
-}
+		assert.True(t, hasUXAgent, "no ux-design agent finding in output")
+	})
 
-func TestCycleOmitsUXAgentWhenDiffHasNoExportedAPI(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diffWithOnlyUnexportedFuncs())
-	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "expected exit 0: %s", out)
+	t.Run("omitted when diff contains only unexported changes", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithOnlyUnexportedFuncs())
+		cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "expected exit 0: %s", out)
 
-	findings := parseFindings(t, out)
-	for _, f := range findings {
-		assert.NotEqual(t, "ux-design", f["agent"], "ux-design should not appear for unexported-only diff")
-	}
-}
-
-func TestCycleUXAgentRunsOfflineWithWarnFallback(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diffWithExportedFunc())
-	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "expected exit 0: %s", out)
-
-	findings := parseFindings(t, out)
-	for _, f := range findings {
-		if f["agent"] == "ux-design" {
-			assert.Equal(t, "warn", f["verdict"])
+		findings := parseFindings(t, out)
+		for _, f := range findings {
+			assert.NotEqual(t, "ux-design", f["agent"], "ux-design should not appear for unexported-only diff")
 		}
-	}
-}
+	})
 
-func TestCycleCombinesAllFourAgentsWhenDiffHasExportedAPI(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diffWithExportedFunc())
-	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
-	out, err := cmd.CombinedOutput()
-	assert.NoError(t, err, "expected exit 0: %s", out)
+	t.Run("runs offline with warn fallback when no API key is configured", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithExportedFunc())
+		cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "expected exit 0: %s", out)
 
-	findings := parseFindings(t, out)
-	agents := make(map[string]bool)
-	for _, f := range findings {
-		if a, ok := f["agent"].(string); ok {
-			agents[a] = true
+		findings := parseFindings(t, out)
+		for _, f := range findings {
+			if f["agent"] == "ux-design" {
+				assert.Equal(t, "warn", f["verdict"])
+			}
 		}
-	}
-	assert.True(t, agents["testing-quality"], "missing testing-quality agent")
-	assert.True(t, agents["software-engineering"], "missing software-engineering agent")
-	assert.True(t, agents["security"], "missing security agent")
-	assert.True(t, agents["ux-design"], "missing ux-design agent")
+	})
+
+	t.Run("all four agents present when diff has exported API", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithExportedFunc())
+		cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+		out, err := cmd.CombinedOutput()
+		assert.NoError(t, err, "expected exit 0: %s", out)
+
+		findings := parseFindings(t, out)
+		agents := make(map[string]bool)
+		for _, f := range findings {
+			if a, ok := f["agent"].(string); ok {
+				agents[a] = true
+			}
+		}
+		assert.True(t, agents["testing-quality"], "missing testing-quality agent")
+		assert.True(t, agents["software-engineering"], "missing software-engineering agent")
+		assert.True(t, agents["security"], "missing security agent")
+		assert.True(t, agents["ux-design"], "missing ux-design agent")
+	})
 }
 
 func diffWithExportedFunc() string {

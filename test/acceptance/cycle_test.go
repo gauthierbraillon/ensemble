@@ -37,86 +37,6 @@ func parseFindings(t *testing.T, out []byte) []map[string]interface{} {
 	return findings
 }
 
-func TestCycleFindingsAreOneJSONLineEachForCIIntegration(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader("diff --git a/x.go b/x.go\n")
-	out, _ := cmd.CombinedOutput()
-
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		if line == "" {
-			continue
-		}
-		var m map[string]interface{}
-		assert.NoError(t, json.Unmarshal([]byte(line), &m), "not valid JSON: %q", line)
-	}
-}
-
-func TestCyclePassesWhenImplementationHasMatchingTest(t *testing.T) {
-	diff := diffWithTest()
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diff)
-	out, err := cmd.CombinedOutput()
-	assert.NoError(t, err, "unexpected block: %s", out)
-
-	for _, f := range parseFindings(t, out) {
-		assert.NotEqual(t, "block", f["verdict"])
-	}
-}
-
-func TestCycleBlocksWhenImplementationHasNoTest(t *testing.T) {
-	diff := diffWithoutTest()
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diff)
-	out, _ := cmd.CombinedOutput()
-
-	assert.Equal(t, 1, cmd.ProcessState.ExitCode(), "expected exit 1: %s", out)
-
-	hasBlock := false
-	for _, f := range parseFindings(t, out) {
-		if f["verdict"] == "block" {
-			hasBlock = true
-		}
-	}
-	assert.True(t, hasBlock)
-}
-
-func TestCycleRunsOfflineWithWarningWhenNoAPIKeyIsConfigured(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diffWithTest())
-	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
-	out, err := cmd.CombinedOutput()
-	assert.NoError(t, err, "expected exit 0: %s", out)
-
-	findings := parseFindings(t, out)
-	var sweFindings []map[string]interface{}
-	for _, f := range findings {
-		if f["agent"] == "software-engineering" {
-			sweFindings = append(sweFindings, f)
-		}
-	}
-	require.Len(t, sweFindings, 1)
-	assert.Equal(t, "warn", sweFindings[0]["verdict"])
-}
-
-func TestCycleCombinesAllActiveAgents(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diffWithTest())
-	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
-	out, err := cmd.CombinedOutput()
-	assert.NoError(t, err, "expected exit 0: %s", out)
-
-	findings := parseFindings(t, out)
-	agents := make(map[string]bool)
-	for _, f := range findings {
-		if a, ok := f["agent"].(string); ok {
-			agents[a] = true
-		}
-	}
-	assert.True(t, agents["testing-quality"], "missing testing-quality agent")
-	assert.True(t, agents["software-engineering"], "missing software-engineering agent")
-	assert.True(t, agents["security"], "missing security agent")
-}
-
 func envWithout(env []string, key string) []string {
 	var out []string
 	prefix := key + "="
@@ -155,4 +75,84 @@ func diffWithoutTest() string {
 +package bar
 +func Multiply(a, b int) int { return a * b }
 `
+}
+
+func TestCycleCommand(t *testing.T) {
+	t.Run("each finding is one JSON line for CI integration", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader("diff --git a/x.go b/x.go\n")
+		out, _ := cmd.CombinedOutput()
+
+		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			if line == "" {
+				continue
+			}
+			var m map[string]interface{}
+			assert.NoError(t, json.Unmarshal([]byte(line), &m), "not valid JSON: %q", line)
+		}
+	})
+
+	t.Run("passes when every implementation file has a matching test", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithTest())
+		out, err := cmd.CombinedOutput()
+		assert.NoError(t, err, "unexpected block: %s", out)
+
+		for _, f := range parseFindings(t, out) {
+			assert.NotEqual(t, "block", f["verdict"])
+		}
+	})
+
+	t.Run("blocks when an implementation file has no test", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithoutTest())
+		out, _ := cmd.CombinedOutput()
+
+		assert.Equal(t, 1, cmd.ProcessState.ExitCode(), "expected exit 1: %s", out)
+
+		hasBlock := false
+		for _, f := range parseFindings(t, out) {
+			if f["verdict"] == "block" {
+				hasBlock = true
+			}
+		}
+		assert.True(t, hasBlock)
+	})
+
+	t.Run("runs offline with warn fallback when no API key is configured", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithTest())
+		cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+		out, err := cmd.CombinedOutput()
+		assert.NoError(t, err, "expected exit 0: %s", out)
+
+		findings := parseFindings(t, out)
+		var sweFindings []map[string]interface{}
+		for _, f := range findings {
+			if f["agent"] == "software-engineering" {
+				sweFindings = append(sweFindings, f)
+			}
+		}
+		require.Len(t, sweFindings, 1)
+		assert.Equal(t, "warn", sweFindings[0]["verdict"])
+	})
+
+	t.Run("combines all active agents in a single output stream", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithTest())
+		cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+		out, err := cmd.CombinedOutput()
+		assert.NoError(t, err, "expected exit 0: %s", out)
+
+		findings := parseFindings(t, out)
+		agents := make(map[string]bool)
+		for _, f := range findings {
+			if a, ok := f["agent"].(string); ok {
+				agents[a] = true
+			}
+		}
+		assert.True(t, agents["testing-quality"], "missing testing-quality agent")
+		assert.True(t, agents["software-engineering"], "missing software-engineering agent")
+		assert.True(t, agents["security"], "missing security agent")
+	})
 }

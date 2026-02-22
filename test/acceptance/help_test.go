@@ -8,20 +8,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCycleCommandShowsUsageExampleInHelp(t *testing.T) {
-	out, err := exec.Command(ensembleBin(t), "cycle", "--help").CombinedOutput()
-	require.NoError(t, err)
-	assert.Contains(t, string(out), "git diff HEAD~1 | ensemble cycle")
-}
+func TestCLIHelp(t *testing.T) {
+	t.Run("cycle --help shows usage example", func(t *testing.T) {
+		out, err := exec.Command(ensembleBin(t), "cycle", "--help").CombinedOutput()
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "git diff HEAD~1 | ensemble cycle")
+	})
 
-func TestHookHelpExplainsItIsCalledByClaudeCode(t *testing.T) {
-	out, err := exec.Command(ensembleBin(t), "hook", "--help").CombinedOutput()
-	require.NoError(t, err)
-	assert.Contains(t, string(out), "settings.json")
-}
+	t.Run("hook --help explains it is called by Claude Code via settings.json", func(t *testing.T) {
+		out, err := exec.Command(ensembleBin(t), "hook", "--help").CombinedOutput()
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "settings.json")
+	})
 
-func TestEnsembleDoesNotExposeInternalShellCompletionCommand(t *testing.T) {
-	out, err := exec.Command(ensembleBin(t), "--help").CombinedOutput()
-	require.NoError(t, err)
-	assert.NotContains(t, string(out), "completion")
+	t.Run("does not expose internal shell completion command", func(t *testing.T) {
+		out, err := exec.Command(ensembleBin(t), "--help").CombinedOutput()
+		require.NoError(t, err)
+		assert.NotContains(t, string(out), "completion")
+	})
 }

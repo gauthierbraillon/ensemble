@@ -10,34 +10,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCycleIncludesSecurityAgentInOutput(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diffWithTest())
-	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "expected exit 0: %s", out)
+func TestSecurityAgent(t *testing.T) {
+	t.Run("included in cycle output for every diff", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithTest())
+		cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "expected exit 0: %s", out)
 
-	findings := parseFindings(t, out)
-	hasSecurityAgent := false
-	for _, f := range findings {
-		if f["agent"] == "security" {
-			hasSecurityAgent = true
+		findings := parseFindings(t, out)
+		hasSecurityAgent := false
+		for _, f := range findings {
+			if f["agent"] == "security" {
+				hasSecurityAgent = true
+			}
 		}
-	}
-	assert.True(t, hasSecurityAgent, "no security agent finding in output")
-}
+		assert.True(t, hasSecurityAgent, "no security agent finding in output")
+	})
 
-func TestCycleSecurityAgentRunsOfflineWithWarnFallback(t *testing.T) {
-	cmd := exec.Command(ensembleBin(t), "cycle")
-	cmd.Stdin = strings.NewReader(diffWithTest())
-	cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "expected exit 0: %s", out)
+	t.Run("runs offline with warn fallback when no API key is configured", func(t *testing.T) {
+		cmd := exec.Command(ensembleBin(t), "cycle")
+		cmd.Stdin = strings.NewReader(diffWithTest())
+		cmd.Env = envWithout(os.Environ(), "ANTHROPIC_API_KEY")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "expected exit 0: %s", out)
 
-	findings := parseFindings(t, out)
-	for _, f := range findings {
-		if f["agent"] == "security" {
-			assert.Equal(t, "warn", f["verdict"])
+		findings := parseFindings(t, out)
+		for _, f := range findings {
+			if f["agent"] == "security" {
+				assert.Equal(t, "warn", f["verdict"])
+			}
 		}
-	}
+	})
 }
